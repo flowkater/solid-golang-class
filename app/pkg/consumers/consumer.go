@@ -42,7 +42,6 @@ func Register(name string, factory ConsumerFactory) {
 
 // 컨슈머를 사용자의 설정값에 따라 반환하는 함수
 func CreateConsumer(name string, config jsonObj) (Consumer, error) {
-
 	factory, ok := consumerFactories[name]
 	if !ok {
 		// Factory has not been registered.

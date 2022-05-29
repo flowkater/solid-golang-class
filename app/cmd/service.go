@@ -46,7 +46,7 @@ func Run(cfg config.Config) {
 func GarbageCollector() {
 	gcTimer := time.NewTicker(1 * time.Second)
 
-	for _ = range gcTimer.C {
+	for range gcTimer.C {
 		debug.FreeOSMemory()
 	}
 }

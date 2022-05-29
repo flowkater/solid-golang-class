@@ -21,6 +21,7 @@ type Consumer interface {
 	Delete() error
 	ReConnect() error
 	FetchRecords() (map[string]interface{}, error)
+	QueueDeclare() error
 	ExchangeDeclare() error
 	QueueBind() error
 	InitDeliveryChannel() error
@@ -44,33 +45,69 @@ type RabbitMQConsumer struct {
 }
 
 // Read implements Consumer
-func (*RabbitMQConsumer) Read(ctx context.Context) error {
+func (rc *RabbitMQConsumer) Read(ctx context.Context) error {
 	// TODO: 1주차 과제 입니다.
+	// var forever chan struct{}
+
+	// go func() {
+	// 	for d := range msgs {
+	// 		log.Printf(" [x] Received %s", d.Body)
+	// 	}
+	// }()
+
+	// log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	// <-forever
+
+	var err error
+	rc.message, err = rc.ch.Consume(
+		rc.q.Name, // queue
+		"",        // consumer
+		true,      // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	if err != nil {
+		return err
+	}
+
+	rc.FetchRecords()
+
 	return nil
 }
 
 func NewRabbitMQConsumer(config jsonObj) *RabbitMQConsumer {
+	pipeParams, ok := config["pipeParams"].(map[string]interface{})
+	if !ok {
+		logger.Panicf("no pipeParams provided")
+	}
 
 	//extract context from config
-	ctx, ok := config["context"].(context.Context)
+	ctx, ok := pipeParams["context"].(context.Context)
 	if !ok {
-		logger.Panicf("no topic provided")
+		logger.Panicf("no context provided")
 	}
 
 	//extract stream chan from config
-	stream, ok := config["stream"].(chan interface{})
+	stream, ok := pipeParams["stream"].(chan interface{})
 	if !ok {
 		logger.Panicf("no stream provided")
 	}
 
 	//extract error chan from config
-	errch, ok := config["errch"].(chan error)
+	errch, ok := pipeParams["errch"].(chan error)
 	if !ok {
 		logger.Panicf("no stream provided")
 	}
 
 	var cfg RabbitMQConsumerConfig
-	cfgData, err := json.Marshal(config)
+	rbtmqCnCfg, ok := config["consumerCfg"].(map[string]interface{})
+	if !ok {
+		logger.Panicf("no consumerCfg provided")
+	}
+
+	cfgData, err := json.Marshal(rbtmqCnCfg)
 	if err != nil {
 		logger.Panicf("error in mashalling rabbitmq configuration: %v", err)
 		return nil
@@ -97,6 +134,7 @@ func (c *RabbitMQConsumer) CreateConsumer() error {
 	if err != nil {
 		return err
 	}
+
 	err = c.CreateChannel()
 	if err != nil {
 		return err
@@ -268,16 +306,16 @@ func (c *RabbitMQConsumer) InitDeliveryChannel() error {
 }
 
 // GetPaylod implements Consumer
-func (*RabbitMQConsumer) GetPaylod() payloads.Payload {
-	panic("unimplemented")
+func (rc *RabbitMQConsumer) GetPaylod() payloads.Payload {
+	return rc.GetPaylod()
 }
 
 // PutPaylod implements Consumer
-func (*RabbitMQConsumer) PutPaylod(p payloads.Payload) error {
-	panic("unimplemented")
+func (rc *RabbitMQConsumer) PutPaylod(p payloads.Payload) error {
+	return rc.PutPaylod(p)
 }
 
 // Stream implements Consumer
-func (*RabbitMQConsumer) Stream() chan interface{} {
-	panic("unimplemented")
+func (rc *RabbitMQConsumer) Stream() chan interface{} {
+	return rc.Stream()
 }
