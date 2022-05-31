@@ -1,0 +1,28 @@
+[
+    {
+        "consumer": {
+            "name": "rabbitmq",
+            "config": {
+                "host": "amqp://guest:guest@localhost:5672/",
+                "exchange_name": "amq.direct",
+                "exchange_type": "direct",
+                "queue_name": "mock-data",
+                "routing_key": "mock-data"
+            }
+        },
+        "processors": [
+            {
+                "name": "noop"
+            }
+        ],
+        "storages": [
+            {
+                "type": "filesystem",
+                "config": {
+                    "path": "fs/"
+                }
+            }
+        ]
+    }
+]
+

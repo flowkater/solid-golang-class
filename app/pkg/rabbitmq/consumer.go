@@ -6,6 +6,7 @@ import (
 	"errors"
 	"event-data-pipeline/pkg/logger"
 	"event-data-pipeline/pkg/payloads"
+	"fmt"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -42,21 +43,12 @@ type RabbitMQConsumer struct {
 	ctx            context.Context
 	stream         chan interface{}
 	errCh          chan error
+	payload        payloads.Payload
 }
 
 // Read implements Consumer
 func (rc *RabbitMQConsumer) Read(ctx context.Context) error {
 	// TODO: 1주차 과제 입니다.
-	// var forever chan struct{}
-
-	// go func() {
-	// 	for d := range msgs {
-	// 		log.Printf(" [x] Received %s", d.Body)
-	// 	}
-	// }()
-
-	// log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	// <-forever
 
 	var err error
 	rc.message, err = rc.ch.Consume(
@@ -72,7 +64,14 @@ func (rc *RabbitMQConsumer) Read(ctx context.Context) error {
 		return err
 	}
 
-	rc.FetchRecords()
+	for range rc.message {
+		body, err := rc.FetchRecords()
+		if err != nil {
+			logger.Infof("error in fetching records: %v", err)
+			return err
+		}
+		fmt.Println(body)
+	}
 
 	return nil
 }
@@ -230,8 +229,10 @@ func (c *RabbitMQConsumer) FetchRecords() (map[string]interface{}, error) {
 	var letter amqp.Delivery
 	select {
 	case message := <-c.message:
+		logger.Debugf("mesage")
 		letter = message
 	case <-c.ctx.Done():
+		logger.Debugf("done")
 		return nil, nil
 	}
 	logger.Debugf("Recevied Letter :%s", string(letter.Body))
@@ -307,15 +308,16 @@ func (c *RabbitMQConsumer) InitDeliveryChannel() error {
 
 // GetPaylod implements Consumer
 func (rc *RabbitMQConsumer) GetPaylod() payloads.Payload {
-	return rc.GetPaylod()
+	return rc.payload
 }
 
 // PutPaylod implements Consumer
 func (rc *RabbitMQConsumer) PutPaylod(p payloads.Payload) error {
-	return rc.PutPaylod(p)
+	rc.payload = p
+	return nil
 }
 
 // Stream implements Consumer
 func (rc *RabbitMQConsumer) Stream() chan interface{} {
-	return rc.Stream()
+	return rc.stream
 }

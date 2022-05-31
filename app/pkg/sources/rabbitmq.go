@@ -6,6 +6,7 @@ import (
 	"event-data-pipeline/pkg/logger"
 	"event-data-pipeline/pkg/payloads"
 	"event-data-pipeline/pkg/rabbitmq"
+	"fmt"
 )
 
 type RabbitMQSource struct {
@@ -28,6 +29,7 @@ func (rc *RabbitMQSource) Next(ctx context.Context) bool {
 				logger.Errorf("failed to marshall the stream data")
 				return false
 			}
+			fmt.Println("NEXT", data)
 			var kfkPayload payloads.KafkaPayload
 			err = json.Unmarshal(data, &kfkPayload)
 			if err != nil {
